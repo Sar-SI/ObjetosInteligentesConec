@@ -1,77 +1,21 @@
-1. Wokwi – Sensores Virtuais
-Acesse Wokwi e crie um novo projeto ESP32 + DHT22.
-2. Broker MQTT
-3. Node-RED
-4. InfluxDB
-5. Grafana
-6. API de WhatsApp (CallMeBot)
+Plataforma de Monitoramento de Conforto Ambiental
 
-Uso
-Inicie todos os containers/serviços:
+Contexto & Problema
+Em salas de aula, flutuações de temperatura prejudicam a concentração dos estudantes e incentivam o uso excessivo de ar‐condicionado, elevando custos e impactando o meio ambiente.
 
-InfluxDB
+Objetivo
+Desenvolver uma solução acessível e open-source que monitore, em tempo real, a temperatura de duas salas, calculando sua média e acionando um único ar-condicionado apenas quando necessário.
 
-Grafana
+Solução Proposta
+	1.	Sensores Virtuais (Wokwi + DHT22) capturam temperatura a cada 15 s em duas salas.
+	2.	MQTT transporte leve para enviar leituras ao Node-RED.
+	3.	Node-RED:
+	•	Armazena leituras brutas no InfluxDB para histórico.
+	•	Calcula a média das duas salas.
+	•	Dispara alerta via WhatsApp (CallMeBot) sempre que a média ≥ 28 °C (“ligar o ar”) ou ≤ 16 °C (“desligar o ar”).
+	4.	Grafana exibe dashboards dinâmicos das temperaturas individuais e da média, facilitando a análise.
 
-Eclipse Mosquitto (se usar local)
-
-Node-RED
-
-Abra o Wokwi (ESP32 + DHT22) e inicie a simulação.
-
-Observe:
-
-No Node-RED Debug, aparecerão logs de leitura e alertas.
-
-No InfluxDB Data Explorer, visualize measurement=conforto com dois tipos:
-
-sensor = Sensor1
-
-sensor = Sensor2
-
-tipo = media (média das duas salas)
-
-No Grafana, veja os painéis atualizarem em tempo real.
-
-Teste cenários:
-
-“Condição Normal”: nenhuma mensagem WhatsApp (média entre 16 °C e 28 °C).
-
-“Temperatura Alta”: média ≥ 28 °C → recebe alerta para ligar o ar.
-
-“Temperatura Baixa”: média ≤ 16 °C → recebe alerta para desligar o ar.
-
-Fluxo Node-RED (Export / Import)
-O arquivo node-red/fluxo_conforto.json contém o fluxo completo.
-
-No Node-RED: Menu → Import → Clipboard → cole o conteúdo de fluxo_conforto.json → clique em Import → Deploy.
-
-Este fluxo já inclui:
-
-Nó MQTT in (assinando TrabalhoObjetos/#).
-
-Function 1 (armazenamento bruto e gravação no InfluxDB).
-
-Function 2 (cálculo de média e envio de mensagem ao WhatsApp).
-
-Nós InfluxDB out, WhatsApp out e Debug.
-
-Exemplos de Mensagens
-Alerta de Temperatura Alta
-
-mathematica
-Copiar
-Editar
-Sala 1 faz 31.2°C
-Sala 2 faz 30.0°C
-Média 30.6°C → convém LIGAR o ar condicionado
-Alerta de Temperatura Baixa
-
-mathematica
-Copiar
-Editar
-Sala 1 faz 14.7°C
-Sala 2 faz 15.5°C
-Média 15.1°C → convém DESLIGAR o ar condicionado
-Condição Normal
-(nenhuma mensagem, pois a média ficou entre 16 °C e 28 °C)
+Benefícios & Impactos
+	•	Conforto térmico garantido ao manter a sala na faixa ideal (20 °C–24 °C).
+	•	Eficiência energética, reduzindo em até 30 % o consumo ao operar o ar-condicionado apenas sob demanda.
+	•	Engajamento dos alunos e sustentabilidade, alinhados aos Objetivos de Desenvolvimento Sustentável (ODS 3, 4 e 13).
