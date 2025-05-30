@@ -1,0 +1,197 @@
+[
+    {
+        "id": "53803152e2ecd8a2",
+        "type": "tab",
+        "label": "Fluxo 2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "68865d4527b3605b",
+        "type": "mqtt in",
+        "z": "53803152e2ecd8a2",
+        "name": "",
+        "topic": "TrabalhoObjetos/#",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "52ddfdbd90138f5d",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 120,
+        "wires": [
+            [
+                "c9bbc5912a180187"
+            ]
+        ]
+    },
+    {
+        "id": "c6e7795711a1076d",
+        "type": "debug",
+        "z": "53803152e2ecd8a2",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 560,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "c9bbc5912a180187",
+        "type": "function",
+        "z": "53803152e2ecd8a2",
+        "name": "function 1",
+        "func": "// Function – repassa leituras de temperatura para o InfluxDB\ntry {\n  // 1) pega sensor e tipo (temperatura vs umidade)\n  const parts = msg.topic.split('/');\n  const sensor = parts[1];               // \"Sensor1\" ou \"Sensor2\"\n  const field = parts[2].toLowerCase(); // \"temperatura\" ou \"umidade\"\n  const value = parseFloat(msg.payload);\n\n  // 2) só processa temperatura válida\n  if (field !== 'temperatura' || isNaN(value)) {\n    return null;\n  }\n\n  // 3) prepara msg para o InfluxDB v2\n  msg.measurement = 'conforto';          // grava em conforto\n  msg.tags = { sensor: sensor };  // tag sensor=Sensor1|Sensor2\n  msg.fields = { value: value };    // campo value = leitura\n\n  // 4) devolve msg para ser escrita no Influx\n  return msg;\n\n} catch (err) {\n  node.error(\"Function ERROR: \" + err);\n  return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 160,
+        "y": 240,
+        "wires": [
+            [
+                "c6e7795711a1076d",
+                "9d6aab4aabed65c0",
+                "6d9c2e3b83cdc4b1"
+            ]
+        ]
+    },
+    {
+        "id": "6d9c2e3b83cdc4b1",
+        "type": "influxdb out",
+        "z": "53803152e2ecd8a2",
+        "influxdb": "2217135e885f4e6a",
+        "name": "influxDB Account",
+        "measurement": "",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "ProjetoObjetos",
+        "bucket": "novobuCketProjet",
+        "x": 410,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "9d6aab4aabed65c0",
+        "type": "function",
+        "z": "53803152e2ecd8a2",
+        "name": "function 2",
+        "func": "// Function 2 – monta mensagem para WhatsApp com as duas temperaturas + média\ntry {\n    // 1) lê o objeto de temperaturas do flow context\n    const temps = flow.get('temps') || {};\n\n    // 2) extrai sensor e campo do tópico MQTT\n    const parts = msg.topic.split('/');\n    const sensor = parts[1];              // \"Sensor1\" ou \"Sensor2\"\n    const field = parts[2];              // \"Temperatura\" ou \"Umidade\"\n    const value = parseFloat(msg.payload);\n\n    // só processa temperaturas\n    if (field !== 'Temperatura' || isNaN(value)) {\n        return null;\n    }\n\n    // 3) guarda a leitura no contexto\n    temps[sensor] = value;\n    flow.set('temps', temps);\n\n    // 4) só prossegue quando tiver as duas leituras\n    if (temps.Sensor1 == null || temps.Sensor2 == null) {\n        // ainda faltam dados\n        return null;\n    }\n\n    // 5) calcula média\n    const t1 = temps.Sensor1;\n    const t2 = temps.Sensor2;\n    const media = (t1 + t2) / 2;\n\n    // 6) decide a ação\n    let acao;\n    if (media >= 28) {\n        acao = 'convém LIGAR o ar condicionado';\n    } else if (media <= 16) {\n        acao = 'convém DESLIGAR o ar condicionado';\n    } else {\n        acao = 'condição normal – sem ação recomendada';\n    }\n\n    // 7) monta o texto da mensagem\n    const texto =\n        `Sala 1 faz ${t1.toFixed(1)}°C\\n` +\n        `Sala 2 faz ${t2.toFixed(1)}°C\\n` +\n        `Média ${media.toFixed(1)}°C → ${acao}`;\n\n    // 8) prepara msg para o nó WhatsApp\n    msg.payload = texto;\n    msg.to = '+5511952242801';  // <--- coloque aqui o seu número\n\n    // 9) reseta o contexto para a próxima rodada\n    flow.set('temps', {});\n\n    return msg;\n\n} catch (err) {\n    node.error('Function2 ERROR: ' + err);\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 160,
+        "y": 320,
+        "wires": [
+            [
+                "97c3a041a43ecce6"
+            ]
+        ]
+    },
+    {
+        "id": "97c3a041a43ecce6",
+        "type": "node-red-contrib-whatsapp-cmb-send-message",
+        "z": "53803152e2ecd8a2",
+        "name": "",
+        "credtype": "account",
+        "account": "3c8c0d196a0e9e97",
+        "text": "payload",
+        "phonenumbervalue": "",
+        "apikeyvalue": "",
+        "apikeyinputtypemessage": "msg",
+        "phonenumberinputtypemessage": "msg",
+        "inputtypemessage": "msg",
+        "rejectssl": false,
+        "x": 580,
+        "y": 320,
+        "wires": [
+            [
+                "5243304ae6498fe5"
+            ]
+        ]
+    },
+    {
+        "id": "5243304ae6498fe5",
+        "type": "debug",
+        "z": "53803152e2ecd8a2",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "52ddfdbd90138f5d",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.hivemq.com",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "2217135e885f4e6a",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "https://us-east-1-1.aws.cloud2.influxdata.com",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "3c8c0d196a0e9e97",
+        "type": "node-red-contrib-whatsapp-cmb-account",
+        "name": "WHATS"
+    }
+]
