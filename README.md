@@ -19,3 +19,7 @@ Benefícios & Impactos
 	•	Conforto térmico garantido ao manter a sala na faixa ideal (20 °C–24 °C).
 	•	Eficiência energética, reduzindo em até 30 % o consumo ao operar o ar-condicionado apenas sob demanda.
 	•	Engajamento dos alunos e sustentabilidade, alinhados aos Objetivos de Desenvolvimento Sustentável (ODS 3, 4 e 13).
+
+
+
+Membros do Projeto: Matheus Ramalho Malicia, Guilherme Miranda Bertinato da Rocha, Sara de Oliveira Silva Omena, Pedro Gabriel Marotta Silva, Wallace Santana, da Universidade Mackenzie. 5° Semestre
